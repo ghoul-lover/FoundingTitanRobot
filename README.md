@@ -38,10 +38,11 @@ Eren is a simple bot for making your group management easier and cool.
 * Bot Link:  <a href="http://t.me/FoundingTitanRobot" alt="FoundingtitanRobot"> <img src="https://img.shields.io/badge/%F0%9F%A4%96-FoundingTitanRobot-blue" /> </a>
 * Update Channel: <a  href="https://t.me/foundingtitanupdates/" alt="foundingtitanupdates"> <img src="https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F-Updates-lightgrey" /> </a>
 * Support Group : <a href="https://t.me/foundingtitansupport/" alt="foundingtitansupport"> <img src="https://img.shields.io/badge/!-Support%20Group-blue" /> </a>
-* Should you be forking this repo then do not forget to star it - <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/sasukeuchiha912/FoundingTitanRobot?color=white&label=%F0%9F%8C%9F%20star">
+* Should you be forking this repo then do not forget to star it - <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/TeamNexusTG/FoundingTitanRobot?color=white&label=%F0%9F%8C%9F%20star">
 
 ## Credits 
-* Paul larsen and Saitama's Developers
+* This is the original work of [Paul larsen](https://github.com/PaulSonOfLars) and is modified and reworked by [Kaizoku](https://github.com/AnimeKaizoku)
+* If Anything is missing here Feel free to open pull requests.
 
 ## Deploy 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/sasukeuchiha912/FoundingTitanRobot)
