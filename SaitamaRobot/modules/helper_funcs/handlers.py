@@ -1,132 +1,141 @@
-from math import ceil
-from typing import Dict, List
 
-from SaitamaRobot import NO_LOAD
-from telegram import MAX_MESSAGE_LENGTH, Bot, InlineKeyboardButton, ParseMode
-from telegram.error import TelegramError
+import SaitamaRobot.modules.sql.blacklistusers_sql as sql
+from SaitamaRobot import ALLOW_EXCL
+from SaitamaRobot import DEV_USERS, DRAGONS, DEMONS, TIGERS, WOLVES
 
+from telegram import Update
+from telegram.ext import CommandHandler, MessageHandler, RegexHandler, Filters
+from pyrate_limiter import (
+    BucketFullException,
+    Duration,
+    RequestRate,
+    Limiter,
+    MemoryListBucket,
+)
 
-class EqInlineKeyboardButton(InlineKeyboardButton):
-    def __eq__(self, other):
-        return self.text == other.text
-
-    def __lt__(self, other):
-        return self.text < other.text
-
-    def __gt__(self, other):
-        return self.text > other.text
-
-
-def split_message(msg: str) -> List[str]:
-    if len(msg) < MAX_MESSAGE_LENGTH:
-        return [msg]
-
-    lines = msg.splitlines(True)
-    small_msg = ""
-    result = []
-    for line in lines:
-        if len(small_msg) + len(line) < MAX_MESSAGE_LENGTH:
-            small_msg += line
-        else:
-            result.append(small_msg)
-            small_msg = line
-    else:
-        # Else statement at the end of the for loop, so append the leftover string.
-        result.append(small_msg)
-
-    return result
+if ALLOW_EXCL:
+    CMD_STARTERS = ("/", "!")
+else:
+    CMD_STARTERS = ("/",)
 
 
-def paginate_modules(page_n: int, module_dict: Dict, prefix, chat=None) -> List:
-    if not chat:
-        modules = sorted(
-            [EqInlineKeyboardButton(x.__mod_name__,
-                                    callback_data="{}_module({})".format(prefix, x.__mod_name__.lower())) for x
-             in module_dict.values()])
-    else:
-        modules = sorted(
-            [EqInlineKeyboardButton(x.__mod_name__,
-                                    callback_data="{}_module({},{})".format(prefix, chat, x.__mod_name__.lower())) for x
-             in module_dict.values()])
+class AntiSpam:
+    def __init__(self):
+        self.whitelist = (
+            (DEV_USERS or [])
+            + (DRAGONS or [])
+            + (WOLVES or [])
+            + (DEMONS or [])
+            + (TIGERS or [])
+        )
+        # Values are HIGHLY experimental, its recommended you pay attention to our commits as we will be adjusting the values over time with what suits best.
+        Duration.CUSTOM = 15  # Custom duration, 15 seconds
+        self.sec_limit = RequestRate(6, Duration.CUSTOM)  # 6 / Per 15 Seconds
+        self.min_limit = RequestRate(20, Duration.MINUTE)  # 20 / Per minute
+        self.hour_limit = RequestRate(100, Duration.HOUR)  # 100 / Per hour
+        self.daily_limit = RequestRate(1000, Duration.DAY)  # 1000 / Per day
+        self.limiter = Limiter(
+            self.sec_limit,
+            self.min_limit,
+            self.hour_limit,
+            self.daily_limit,
+            bucket_class=MemoryListBucket,
+        )
 
-    pairs = [
-    modules[i * 3:(i + 1) * 3] for i in range((len(modules) + 3 - 1) // 3)
-    ]
-
-    round_num = len(modules) / 3
-    calc = len(modules) - round(round_num)
-    if calc == 1:
-        pairs.append((modules[-1], ))
-    elif calc == 2:
-        pairs.append((modules[-1], ))
-
-    max_num_pages = ceil(len(pairs) / 10)
-    modulo_page = page_n % max_num_pages
-
-    # can only have a certain amount of buttons side by side
-    if len(pairs) > 8:
-        pairs = pairs[modulo_page * 8:8 * (modulo_page + 1)] + [
-            (EqInlineKeyboardButton("<", callback_data="{}_prev({})".format(prefix, modulo_page)),
-                EqInlineKeyboardButton("Back", callback_data="eren_back"),
-             EqInlineKeyboardButton(">", callback_data="{}_next({})".format(prefix, modulo_page)))]
-
-    else:
-        pairs += [[EqInlineKeyboardButton("Back", callback_data="eren_back")]]
-
-    return pairs
-
-
-def send_to_list(
-    bot: Bot, send_to: list, message: str, markdown=False, html=False
-) -> None:
-    if html and markdown:
-        raise Exception("Can only send with either markdown or HTML!")
-    for user_id in set(send_to):
+    def check_user(self, user):
+        """
+        Return True if user is to be ignored else False
+        """
+        if user in self.whitelist:
+            return False
         try:
-            if markdown:
-                bot.send_message(user_id, message, parse_mode=ParseMode.MARKDOWN)
-            elif html:
-                bot.send_message(user_id, message, parse_mode=ParseMode.HTML)
-            else:
-                bot.send_message(user_id, message)
-        except TelegramError:
-            pass  # ignore users who fail
+            self.limiter.try_acquire(user)
+            return False
+        except BucketFullException:
+            return True
 
 
-def build_keyboard(buttons):
-    keyb = []
-    for btn in buttons:
-        if btn.same_line and keyb:
-            keyb[-1].append(InlineKeyboardButton(btn.name, url=btn.url))
+SpamChecker = AntiSpam()
+MessageHandlerChecker = AntiSpam()
+
+
+class CustomCommandHandler(CommandHandler):
+    def __init__(self, command, callback, admin_ok=False, allow_edit=False, **kwargs):
+        super().__init__(command, callback, **kwargs)
+
+        if allow_edit is False:
+            self.filters &= ~(
+                Filters.update.edited_message | Filters.update.edited_channel_post
+            )
+
+    def check_update(self, update):
+        if isinstance(update, Update) and update.effective_message:
+            message = update.effective_message
+
+            try:
+                user_id = update.effective_user.id
+            except:
+                user_id = None
+
+            if user_id:
+                if sql.is_user_blacklisted(user_id):
+                    return False
+
+            if message.text and len(message.text) > 1:
+                fst_word = message.text.split(None, 1)[0]
+                if len(fst_word) > 1 and any(
+                    fst_word.startswith(start) for start in CMD_STARTERS
+                ):
+
+                    args = message.text.split()[1:]
+                    command = fst_word[1:].split("@")
+                    command.append(message.bot.username)
+                    if user_id == 1087968824:
+                        user_id = update.effective_chat.id
+                    if not (
+                        command[0].lower() in self.command
+                        and command[1].lower() == message.bot.username.lower()
+                    ):
+                        return None
+                    if SpamChecker.check_user(user_id):
+                        return None
+                    filter_result = self.filters(update)
+                    if filter_result:
+                        return args, filter_result
+                    return False
+
+    def handle_update(self, update, dispatcher, check_result, context=None):
+        if context:
+            self.collect_additional_context(context, update, dispatcher,
+                                            check_result)
+            return self.callback(update, context)
+        optional_args = self.collect_optional_args(dispatcher, update,
+                                                   check_result)
+        return self.callback(dispatcher.bot, update, **optional_args)
+
+        
+    def collect_additional_context(self, context, update, dispatcher, check_result):
+        if isinstance(check_result, bool):
+            context.args = update.effective_message.text.split()[1:]
         else:
-            keyb.append([InlineKeyboardButton(btn.name, url=btn.url)])
-
-    return keyb
-
-
-def revert_buttons(buttons):
-    res = ""
-    for btn in buttons:
-        if btn.same_line:
-            res += "\n[{}](buttonurl://{}:same)".format(btn.name, btn.url)
-        else:
-            res += "\n[{}](buttonurl://{})".format(btn.name, btn.url)
-
-    return res
+            context.args = check_result[0]
+            if isinstance(check_result[1], dict):
+                context.update(check_result[1])
 
 
-def build_keyboard_parser(bot, chat_id, buttons):
-    keyb = []
-    for btn in buttons:
-        if btn.url == "{rules}":
-            btn.url = "http://t.me/{}?start={}".format(bot.username, chat_id)
-        if btn.same_line and keyb:
-            keyb[-1].append(InlineKeyboardButton(btn.name, url=btn.url))
-        else:
-            keyb.append([InlineKeyboardButton(btn.name, url=btn.url)])
-
-    return keyb
+class CustomRegexHandler(RegexHandler):
+    def __init__(self, pattern, callback, friendly="", **kwargs):
+        super().__init__(pattern, callback, **kwargs)
 
 
-def is_module_loaded(name):
-    return name not in NO_LOAD
+class CustomMessageHandler(MessageHandler):
+    def __init__(self, filters, callback, friendly="", allow_edit=False, **kwargs):
+        super().__init__(filters, callback, **kwargs)
+        if allow_edit is False:
+            self.filters &= ~(
+                Filters.update.edited_message | Filters.update.edited_channel_post
+            )
+
+        def check_update(self, update):
+            if isinstance(update, Update) and update.effective_message:
+                return self.filters(update)
