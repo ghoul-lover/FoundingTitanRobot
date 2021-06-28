@@ -66,7 +66,7 @@ if ENV:
     try:
         TIGERS = set(int(x) for x in os.environ.get("SCOUTS", "").split())
     except ValueError:
-        raise Exception("Your tiger users list does not contain valid integers.")
+        raise Exception("Your scout users list does not contain valid integers.")
 
     INFOPIC = bool(os.environ.get("INFOPIC", False))
     EVENT_LOGS = os.environ.get("EVENT_LOGS", None)
@@ -85,6 +85,7 @@ if ENV:
     WORKERS = int(os.environ.get("WORKERS", 8))
     BAN_STICKER = os.environ.get("BAN_STICKER", "CAADAgADOwADPPEcAXkko5EB3YGYAg")
     ALLOW_EXCL = os.environ.get("ALLOW_EXCL", False)
+    TEMP_DOWNLOAD_DIRECTORY = os.environ.get("TEMP_DOWNLOAD_DIRECTORY", "./")
     CASH_API_KEY = os.environ.get("CASH_API_KEY", None)
     TIME_API_KEY = os.environ.get("TIME_API_KEY", None)
     WALL_API = os.environ.get("WALL_API", None)
@@ -99,9 +100,8 @@ if ENV:
     SPAMWATCH_API = os.environ.get("SPAMWATCH_API", None)
     ARQ_API_URL =  "https://thearq.tech"
     ARQ_API_KEY = ARQ_API
-    
-
     ALLOW_CHATS = os.environ.get("ALLOW_CHATS", True)
+    
 
     try:
         BL_CHATS = set(int(x) for x in os.environ.get("BL_CHATS", "").split())
@@ -140,7 +140,7 @@ else:
     try:
         TIGERS = set(int(x) for x in Config.SCOUTS or [])
     except ValueError:
-        raise Exception("Your tiger users list does not contain valid integers.")
+        raise Exception("Your scout users list does not contain valid integers.")
 
     EVENT_LOGS = Config.EVENT_LOGS
     WEBHOOK = Config.WEBHOOK
@@ -174,7 +174,7 @@ else:
     MONGO_DB = Config.MONGO_DB
     ARQ_API = Config.ARQ_API
     BOT_ID = Config.BOT_ID
-    
+    TEMP_DOWNLOAD_DIRECTORY = Config.TEMP_DOWNLOAD_DIRECTORY
 
     try:
         BL_CHATS = set(int(x) for x in Config.BL_CHATS or [])
@@ -191,7 +191,7 @@ try:
 
     REDIS.ping()
 
-    LOGGER.info("Your redis server is now alive!")
+    LOGGER.info("Connecting to the Redis Database!")
 
 except BaseException:
 
@@ -201,7 +201,7 @@ finally:
 
    REDIS.ping()
 
-   LOGGER.info("Your redis server is now alive!")
+   LOGGER.info("Connection to the Redis Database Established Successfully!")
     
 
 if not SPAMWATCH_API:
@@ -214,10 +214,13 @@ else:
         sw = None
         LOGGER.warning("Can't connect to SpamWatch!")
 
-updater = tg.Updater(TOKEN, workers=WORKERS, use_context=True)
+updater = tg.Updater(TOKEN, workers=min(32,os.cpu_count() +4), request_kwargs={"read_timeout": 10, "connect_timeout": 10}, use_context=True)
+print("[EREN]: TELETHON CLIENT STARTING")
 telethn = TelegramClient("eren", API_ID, API_HASH)
 dispatcher = updater.dispatcher
+print("[EREN]: PYROGRAM CLIENT STARTING")
 pbot = Client("ErenPyro", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
+print("[EREN]: CONNECTING TO MONGO DATABASE")
 mongodb = MongoClient(MONGO_URI, MONGO_PORT)[MONGO_DB]
 motor = motor_asyncio.AsyncIOMotorClient(MONGO_URI)
 db = motor[MONGO_DB]
@@ -227,6 +230,7 @@ aiohttpsession = ClientSession()
 # ARQ Client
 print("[INFO]: INITIALIZING ARQ CLIENT")
 arq = ARQ(ARQ_API_URL, ARQ_API_KEY, aiohttpsession)
+print("[EREN]: CONNECTING TO ELEPHANT SQL DATABASE")
 
 DRAGONS = list(DRAGONS) + list(DEV_USERS)
 DEV_USERS = list(DEV_USERS)
