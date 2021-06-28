@@ -1,5 +1,5 @@
 {
-      "name": "FoundingTitanRobot",
+"name": "FoundingTitanRobot",
       "description": "An Anime themed Telegram group management bot.",
       "keywords": [
          "telegram",
@@ -9,15 +9,8 @@
          "Eren"
       ],   
   "logo":    "https://telegra.ph/file/ed5b77b9aa323a3abd08e.jpg",
- "repository": "https://github.com/sasukeuchiha912/ErenJaegerRobot",
-   "addons": [
-      {
-         "options": {
-            "version": "12"
-         },
-         "plan": "heroku-postgresql"
-      }
-   ],
+ "repository": "https://github.com/TeamNexusTG/FoundingTitanRobot",   
+  
    "env": {
       "TOKEN": {
          "description": "Your bot token. Get one from @BotFather duh",
@@ -32,12 +25,7 @@
       "API_HASH": {
          "description": "Get API_HASH from my.telegram.org, used for telethon based modules.",
          "required": true,
-         "value": ""
-      },    
-      "SQLALCHEMY_DATABASE_URI": {
-         "description": "Your postgres sql db, empty this field if you dont have one.",
-         "required": false,
-         "value": "sqldbtype://username:pw@hostname:port/db_name"
+         "value": ""      
       },      
       "OWNER_ID": {
          "description": "Your user ID as an integer.",
@@ -170,17 +158,7 @@
          "description": "Redis URI create one from redislabs.com.",
          "required": true,
          "value": ""
-       }, 
-       "APP_ID": {
-         "description": "API ID of 2nd telegram account if you dont have two accounts then use the same accounts API ID, but i recommend using 2nd accounts API ID",
-         "required": false,
-         "value": ""
-      }, 
-      "APP_HASH": {
-         "description": " API HASH of 2nd telegram account if you dont two accounts then use the same accounts API HASH, but i recommend using 2nd accounts API HASH.",
-         "required": false,
-         "value": ""
-       }, 
+       },        
        "STRING_SESSION": {
          "description": "Telethon String Session, create it from https://repl.it/@SpEcHiDe/GenerateStringSession .",
          "required": true,
@@ -200,6 +178,11 @@
       "description": "Get this from @ARQRobot",
       "value": "",
       "required": true
+      },    
+      "DATABASE_URL": {
+         "description": "Your ElephantSQL Database, Make yours from ElephantSQL.com",
+         "required": true,
+         "value": " "
       
       }
       
