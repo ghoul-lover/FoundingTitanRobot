@@ -180,7 +180,7 @@
       "required": true
       },    
       "DATABASE_URL": {
-         "description": "Your ElephantSQL Database, Make yours from ElephantSQL.com",
+         "description": "Your ElephantSQL Database, Make yours from ElephantSQL.com, Remember to add ql at the starting ex : it will be postgres:, change it to postgresql",
          "required": true,
          "value": " "
       
