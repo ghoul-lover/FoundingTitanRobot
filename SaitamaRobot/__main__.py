@@ -5,7 +5,7 @@ from sys import argv
 from typing import Optional
 
 from SaitamaRobot import (
-
+    ALLOW_EXCL,
     CERT_PATH,
     DONATION_LINK,
     LOGGER,
