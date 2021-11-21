@@ -7,7 +7,7 @@ import sys
 import time
 
 import spamwatch
-
+import pbot
 import telegram.ext as tg
 
 from telethon import TelegramClient
