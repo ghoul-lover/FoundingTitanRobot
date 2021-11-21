@@ -3,7 +3,7 @@ import time
 import re
 from sys import argv
 from typing import Optional
-import pbot
+from SaitamaRobot import pbot
 from SaitamaRobot import (
     ALLOW_EXCL,
     CERT_PATH,
